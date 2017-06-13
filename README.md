@@ -99,6 +99,8 @@ In this case, you can send the simulator whatever you want it to graph along its
 
 Once the post is finished, you can go to the browser and the data will be graphed.
 
+MAKE SURE YOU HAVE AN ACTIVE INTERNET CONNECTION TO DISPLAY GRAPHS! ( See Issue #3 )
+
 ## Algorithm samples
 
 We have included a copule of simple, not cleaned up code samples of algorithms that have been tested with the simulator. They are all located on the /closed_loop_algorithm_samples folder on the repository.
