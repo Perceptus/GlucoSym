@@ -126,7 +126,7 @@ When the simulation finishes, go to your browser widow where the sim is loaded a
 
 GlucoSym was developed to be used as a tool to validate our work and help us advance faster into better insulin delivery automation solutions.
 
-Please refrain from using GlucoSym results to evidence good and/or bad work from other people in the community!
+Please refrain from using GlucoSym results to evidence "good" vs "bad" work from other people in the community!
 
 		The MIT License (MIT)
 
