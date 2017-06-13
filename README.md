@@ -128,8 +128,6 @@ GlucoSym was developed to be used as a tool to validate our work and help us adv
 
 Please refrain using GlucoSym results to evidence good and/or bad work from other people in the community!
 
-# The MIT License (MIT)
-
 		The MIT License (MIT)
 
 		Copyright (c) 2017 Perceptus.org
