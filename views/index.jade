@@ -1,0 +1,550 @@
+extends layout
+
+block content
+  h1= title
+  hr
+  br
+
+  h2 simulated patient settings
+  hr
+
+  br
+  input(type="radio", name="patient_profile", id="patient_a", value="a", checked=true, onClick="setPatient(this.value)")
+  span &nbsp Patient A
+
+  br
+  input(type="radio", name="patient_profile", id="patient_b", value="b", onClick="setPatient(this.value)")
+  span &nbsp Patient B
+
+  br
+  input(type="radio", name="patient_profile", id="patient_c", value="c", onClick="setPatient(this.value)")
+  span &nbsp Patient C
+
+  br
+  input(type="radio", name="patient_profile", id="patient_d", value="d", onClick="setPatient(this.value)")
+  span &nbsp Patient D
+
+  br
+  input(type="radio", name="patient_profile", id="patient_e", value="e", onClick="setPatient(this.value)")
+  span &nbsp Patient E
+
+  br
+  input(type="radio", name="patient_profile", id="patient_f", value="f", onClick="setPatient(this.value)")
+  span &nbsp Patient F
+
+  br
+  input(type="radio", name="patient_profile", id="patient_g", value="g", onClick="setPatient(this.value)")
+  span &nbsp Patient G
+  
+  br
+  input(type="radio", name="patient_profile", id="patient_h", value="h", onClick="setPatient(this.value)")
+  span &nbsp Patient H
+
+  br
+  input(type="radio", name="patient_profile", id="patient_i", value="i", onClick="setPatient(this.value)")
+  span &nbsp Patient I
+
+  br
+  input(type="radio", name="patient_profile", id="patient_i", value="i", onClick="setPatient(this.value)")
+  span &nbsp Patient J
+
+  br
+  br
+
+  label Body weight ( Kg )
+  br
+  input(type="text", id="bw", onChange="updatePatient(this.id,this.value)")
+
+  br
+  br
+
+  label Insulin Clearance Rate ( dl/min )
+  br
+  input(type="text", id="Ci", onChange="updatePatient(this.id,this.value)")
+  
+  br
+  br
+
+  label Time constant associated with insulin movement between the SC delivery site and plasma ( min )
+  br
+  input(type="text", id="tau1", onChange="updatePatient(this.id,this.value)")
+  
+  br
+  br
+
+  label Time constant associated with insulin movement between the SC delivery site and plasma ( min )
+  br
+  input(type="text", id="tau2", onChange="updatePatient(this.id,this.value)")
+  
+  br
+  br
+
+  label Distribution volume in which glucose equilibrates ( dl )
+  br
+  input(type="text", id="Vg", onChange="updatePatient(this.id,this.value)")
+  
+  br
+  br
+
+  label Delay in insulin action following an increase in plasma insulin ( 1/min )
+  br
+  input(type="text", id="p2", onChange="updatePatient(this.id,this.value)")
+
+  br
+  br
+
+  label Endogenous glucose production rate that would be estimated at zero insulin ( mg/dl/min )
+  br
+  input(type="text", id="EGP", onChange="updatePatient(this.id,this.value)")
+
+  br
+  br
+
+  label Effect of glucose per se to increase glucose uptake into cells and lower endogenous glucose production at zero insulin ( 1/min )
+  br
+  input(type="text", id="GEZI", onChange="updatePatient(this.id,this.value)")
+
+  br
+  br
+
+  label Baseline Sensitivity Factor ( dl / micro Units )
+  br
+  input(type="text", id="Si_base", onChange="updatePatient(this.id,this.value)")
+
+  br
+  br
+
+  label Bio-availability
+  br
+  input(type="text", id="bioavail", onChange="updatePatient(this.id,this.value)")
+
+  br
+  br
+
+  label Initial Glucose
+  br
+  input(type="text", id="initialglucose", onChange="updatePatient(this.id,this.value)")
+
+  br
+  br
+
+  label Sensitivity variation at point in time. Start time for variation in minutes ( min )
+  br
+  input(type="text", id="sens_start", onChange="updatePatient(this.id,this.value)")
+
+  br
+  br
+
+  label Sensitivity variation at point in time. Percentage to change at indicated time ( % )
+  br
+  input(type="text", id="sens_per", onChange="updatePatient(this.id,this.value)")
+  
+  br
+  br
+
+  h2 simulation statistics
+  p#stats
+  hr
+
+  table(id="stats_table", style="display:none;")
+    tbody
+      tr
+        th(style="text-align: left;")  < 80
+        td(style="padding-left: 10px;", id="below_range")
+      tr
+        th(style="text-align: left;")  80-180
+        td(style="padding-left: 10px;", id="in_range")
+      tr
+        th(style="text-align: left;")  > 180
+        td(style="padding-left: 10px;", id="above_range")
+      tr
+        th(style="text-align: left;")  Min
+        td(style="padding-left: 10px;", id="stats_min")
+      tr
+        th(style="text-align: left;")  Mean
+        td(style="padding-left: 10px;", id="stats_mean")
+      tr
+        th(style="text-align: left;")  Max
+          td(style="padding-left: 10px;", id="stats_max")        
+        
+  br
+  
+  h2 glucosym graphs
+  p#sim
+  hr
+  br
+
+  h2 algorithm graphs
+  p#algo
+  hr
+  br
+  
+  script(src="/socket.io/socket.io.js")
+  script.
+    
+    // Initialize default patient params
+    setPatient("a")
+    
+    // Updates patient params according to selection from UI
+    function setPatient(value) {
+      
+      // Empty Graphs on dom
+      document.getElementById("sim").innerHTML = "";
+      document.getElementById("algo").innerHTML = "";
+      
+      // Empty stats on dom
+      document.getElementById("below_range").innerHTML = "";
+      document.getElementById("in_range").innerHTML = "";
+      document.getElementById("above_range").innerHTML = "";
+      document.getElementById("stats_min").innerHTML = "";
+      document.getElementById("stats_mean").innerHTML = "";
+      document.getElementById("stats_max").innerHTML = "";
+      document.getElementById("stats_table").style.display = "none";
+      
+      
+      // Redefine Patient Variables
+      if (value == "a") {
+        patient_parameters = { 
+          "sim_p": { 
+            "Si": [], 
+            "bw": 89, 
+            "Ci": 20.1, 
+            "tau1": 49, 
+            "tau2": 47, 
+            "Vg": 253, 
+            "p2": 0.0106, 
+            "EGP": 1.33, 
+            "GEZI": 0.0022, 
+            "Si_base": 0.00000811,
+            "bioavail":6.0,
+            "initialglucose":100
+          }, 
+          "dt": 5.0, 
+          "time": 2160, 
+          "sens": [ { 
+            "per": 100, 
+            "start": 0 
+          } ] 
+        };
+      };
+      
+      if (value == "b") {
+        patient_parameters = { 
+          "sim_p": { 
+            "Si": [], 
+            "bw": 63, 
+            "Ci": 12.81, 
+            "tau1": 41, 
+            "tau2": 10, 
+            "Vg": 261, 
+            "p2": 0.0116, 
+            "EGP": 0.6, 
+            "GEZI": 0.00438, 
+            "Si_base": 0.00000811,
+            "bioavail":6.0,
+            "initialglucose":100 
+          }, 
+          "dt": 5.0, 
+          "time": 2160, 
+          "sens": [ { 
+            "per": 100, 
+            "start": 0 
+          } ] 
+        };
+      };
+      
+      if (value == "c") {
+        patient_parameters = { 
+          "sim_p": { 
+            "Si": [], 
+            "bw": 65, 
+            "Ci": 9.09, 
+            "tau1": 71, 
+            "tau2": 70, 
+            "Vg": 199, 
+            "p2": 0.0233, 
+            "EGP": 1.07, 
+            "GEZI": 0.0035, 
+            "Si_base": 0.00000811,
+            "bioavail":6.0,
+            "initialglucose":100 
+          }, 
+          "dt": 5.0, 
+          "time": 2160, 
+          "sens": [ { 
+            "per": 100, 
+            "start": 0 
+          } ] 
+        };
+      };
+      
+      if (value == "d") {
+        patient_parameters = { 
+          "sim_p": { 
+            "Si": [], 
+            "bw": 116, 
+            "Ci": 18.13, 
+            "tau1": 91, 
+            "tau2": 70, 
+            "Vg": 337, 
+            "p2": 0.00814, 
+            "EGP": 0.98, 
+            "GEZI": 0.0000164, 
+            "Si_base": 0.00000811,
+            "bioavail":6.0,
+            "initialglucose":100 
+          }, 
+          "dt": 5.0, 
+          "time": 2160, 
+          "sens": [ { 
+            "per": 100, 
+            "start": 0 
+          } ] 
+        };
+      };
+      
+      if (value == "e") {
+        patient_parameters = { 
+          "sim_p": { 
+            "Si": [], 
+            "bw": 64, 
+            "Ci": 15.35, 
+            "tau1": 46, 
+            "tau2": 46, 
+            "Vg": 188, 
+            "p2": 0.00963, 
+            "EGP": 0.6, 
+            "GEZI": 0.00433, 
+            "Si_base": 0.00000811,
+            "bioavail":6.0,
+            "initialglucose":100 
+          }, 
+          "dt": 5.0, 
+          "time": 2160, 
+          "sens": [ { 
+            "per": 100, 
+            "start": 0 
+          } ] 
+        };
+      };
+      
+      if (value == "f") {
+        patient_parameters = { 
+          "sim_p": { 
+            "Si": [], 
+            "bw": 51, 
+            "Ci": 5.88, 
+            "tau1": 68, 
+            "tau2": 30, 
+            "Vg": 104, 
+            "p2": 0.00915, 
+            "EGP": 0.603, 
+            "GEZI": 0.00101, 
+            "Si_base": 0.00000811,
+            "bioavail":6.0,
+            "initialglucose":100 
+          }, 
+          "dt": 5.0, 
+          "time": 2160, 
+          "sens": [ { 
+            "per": 100, 
+            "start": 0 
+          } ] 
+        };
+      };
+      
+      if (value == "g") {
+        patient_parameters = { 
+          "sim_p": { 
+            "Si": [], 
+            "bw": 77, 
+            "Ci": 18.06, 
+            "tau1": 60, 
+            "tau2": 60, 
+            "Vg": 263, 
+            "p2": 0.0101, 
+            "EGP": 1.11, 
+            "GEZI": 0.00230, 
+            "Si_base": 0.00000811,
+            "bioavail":6.0,
+            "initialglucose":100 
+          }, 
+          "dt": 5.0, 
+          "time": 2160, 
+          "sens": [ { 
+            "per": 100, 
+            "start": 0 
+          } ] 
+        };
+      };
+      
+      if (value == "h") {
+        patient_parameters = { 
+          "sim_p": { 
+            "Si": [], 
+            "bw": 65, 
+            "Ci": 5.40, 
+            "tau1": 95, 
+            "tau2": 37, 
+            "Vg": 137, 
+            "p2": 0.0103, 
+            "EGP": 1.3, 
+            "GEZI": 0.000000010, 
+            "Si_base": 0.00000811,
+            "bioavail":6.0,
+            "initialglucose":100 
+          }, 
+          "dt": 5.0, 
+          "time": 2160, 
+          "sens": [ { 
+            "per": 100, 
+            "start": 0 
+          } ] 
+        };
+      };
+      
+      if (value == "i") {
+        patient_parameters = { 
+          "sim_p": { 
+            "Si": [], 
+            "bw": 100, 
+            "Ci": 8.75, 
+            "tau1": 131, 
+            "tau2": 21, 
+            "Vg": 193, 
+            "p2": 0.0103, 
+            "EGP": 1.27, 
+            "GEZI": 0.00639, 
+            "Si_base": 0.00000811,
+            "bioavail":6.0,
+            "initialglucose":100 
+          }, 
+          "dt": 5.0, 
+          "time": 2160, 
+          "sens": [ { 
+            "per": 100, 
+            "start": 0 
+          } ] 
+        };
+      };
+      
+      if (value == "j") {
+        patient_parameters = { 
+          "sim_p": { 
+            "Si": [], 
+            "bw": 64, 
+            "Ci": 13.09, 
+            "tau1": 53, 
+            "tau2": 53, 
+            "Vg": 204, 
+            "p2": 0.0102, 
+            "EGP": 0.611, 
+            "GEZI": 0.00104, 
+            "Si_base": 0.00000811,
+            "bioavail":6.0,
+            "initialglucose":100 
+          }, 
+          "dt": 5.0, 
+          "time": 2160, 
+          "sens": [ { 
+            "per": 100, 
+            "start": 0 
+          } ] 
+        };
+      };
+      
+      // Update Patient Setting Form
+      document.getElementById("bw").value = patient_parameters.sim_p.bw;
+      document.getElementById("Ci").value = patient_parameters.sim_p.Ci;
+      document.getElementById("tau1").value = patient_parameters.sim_p.tau1;
+      document.getElementById("tau2").value = patient_parameters.sim_p.tau2;
+      document.getElementById("Vg").value = patient_parameters.sim_p.Vg;
+      document.getElementById("p2").value = patient_parameters.sim_p.p2;
+      document.getElementById("EGP").value = patient_parameters.sim_p.EGP;
+      document.getElementById("GEZI").value = patient_parameters.sim_p.GEZI;
+      document.getElementById("Si_base").value = patient_parameters.sim_p.Si_base;
+      document.getElementById("bioavail").value = patient_parameters.sim_p.bioavail;
+      document.getElementById("initialglucose").value = patient_parameters.sim_p.initialglucose;
+      document.getElementById("sens_start").value = patient_parameters.sens[0].start;
+      document.getElementById("sens_per").value = patient_parameters.sens[0].per;
+      
+      // Post to server
+      post_patient_data();
+    }
+    
+    // Take patient_parameters and post them to the server so they get updated.
+    function updatePatient(id,value) {
+      if ( id == "sens_start" ) {
+        patient_parameters.sens[0].start = parseFloat(value);
+      } else if ( id == "sens_per" ) {
+        patient_parameters.sens[0].per = parseFloat(value);
+      } else {
+        patient_parameters.sim_p[id] = parseFloat(value);        
+      }
+      post_patient_data();
+    }
+    
+    // This function posts the patient parameters to the server to get them updated
+    function post_patient_data() {
+      // Update Server Patient Settings
+      var xhttp = new XMLHttpRequest();
+      xhttp.open('POST', "/update_patient_data");
+      xhttp.setRequestHeader("Content-Type", "application/json");
+      xhttp.send(JSON.stringify(patient_parameters));    
+    }
+    
+    // When data is posted to the server, it is caught by this function so the view gets updated in real time.
+    var socket = io('//'+document.location.hostname+':'+document.location.port);
+    
+    // This function should build the results graphs on the dom.
+    socket.on('displayGraphs', function (data,stats) {
+      
+      // This function adds a new row of data to the pre-loaded graphs. Each new post adds a set of data.
+      var chart_counter = 0;
+    
+      // This function should draw a chart according to passed parameters
+      function draw_chart(set,key) {
+        
+        window["chart_" + chart_counter] = new google.visualization.DataTable();
+        window["chart_" + chart_counter].addColumn('number', 'X');
+        window["chart_" + chart_counter].addColumn('number', "Y");
+        
+        var chart_data = window["chart_" + chart_counter];
+        var graph_data = [];
+        for ( var i = 0; i < data[set][key].length; i++) { graph_data[i] = [i*5,data[set][key][i]]; };
+        chart_data.addRows(graph_data);
+        var options = { hAxis: { title: 'Minutes' }, vAxis: { title: key }, legend: {position: 'none'} };
+        var node = document.createElement("div");
+        node.setAttribute("id", key);
+        document.getElementById(set).appendChild(node);
+        document.getElementById(set).insertBefore(node, document.getElementById(set).firstChild);
+        var chart = new google.visualization.LineChart(document.getElementById(key));
+        chart.draw(chart_data, options);
+        chart_counter++;        
+      }
+      
+      // Goes trhough each element on the posted "algo" object and graphs
+      for (var key in data["algo"]) {
+        if (data["algo"].hasOwnProperty(key)) {
+          draw_chart("algo", key);
+        }
+      }
+
+      // Goes trhough each element on the posted "sim" object and graphs
+      for (var key in data["sim"]) {
+        if (data["sim"].hasOwnProperty(key)) {
+          draw_chart("sim", key);
+        }
+      }
+      
+      // Load stats table
+      document.getElementById("below_range").innerHTML = String(Math.round(stats.lowrange*100)/100) + '%';
+      document.getElementById("in_range").innerHTML = String(Math.round(stats.inrange*100)/100) + '%';
+      document.getElementById("above_range").innerHTML = String(Math.round(stats.highrange*100)/100) + '%';
+      document.getElementById("stats_min").innerHTML = String(Math.round(stats.min*100)/100) + ' mg/dl';
+      document.getElementById("stats_mean").innerHTML = String(Math.round(stats.mean*100)/100) + ' +/- ' + String(Math.round(stats.sd*100)/100) + ' mg/dl';
+      document.getElementById("stats_max").innerHTML = String(Math.round(stats.max*100)/100) + ' mg/dl';
+      document.getElementById("stats_table").style.display = "block";
+            
+    });
+    
